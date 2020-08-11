@@ -1,7 +1,7 @@
 # MFP Postman Authentication
 Postman collection to authenticate with postman using actual credentials
 
-In order for this to work you will first need to create a new web app in MFP for postman. If you already have a web app set up you can reuse that appid. The new app will need to have access to the LoggedIn scope.
+In order for this to work you will first need to create a new web app in MFP for postman. If you already have a web app set up you can reuse that appid. The new app will need to have access to the LoggedIn scope or any scope you which to test.
 
 There are 4 environment variables that the collection will need in order to work. 
 1. HOST - The url from the mfp server ex. https://dev.ex-mfp.com
