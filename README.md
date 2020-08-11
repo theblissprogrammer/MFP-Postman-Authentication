@@ -13,5 +13,5 @@ There are 4 environment variables that the collection will need in order to work
 The collection is broken down to 3 calls. 
 1. Create Session - The create session endpoint is needed to set up a session between Postman and MFP.
 2. Login User - Is where the actual authentication happens with MFP
-3. Get Access Token - Will retrieve the access token to be used for future calls. This will create a new variabled called 'manual_token'. You can use this token is any future calls with MFP to access authenticated endpoints.
+3. Get Access Token - Will retrieve the access token to be used for future calls. This will create a new variable called 'manual_token'. You can use this token is any future calls with MFP to access authenticated endpoints.
 
