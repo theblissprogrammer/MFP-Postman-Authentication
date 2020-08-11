@@ -1,0 +1,344 @@
+{
+	"info": {
+		"_postman_id": "1f8f354f-1c49-43a3-8460-707aff5e5869",
+		"name": "MFP Authentication",
+		"description": "Access mfp authentication from postman",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Create Session",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "bed4255f-3258-4b05-8e87-ff247b9fecf2",
+								"exec": [
+									"var location = pm.response.headers.get('Location').split('/');",
+									"var clientId = location[location.length -1];",
+									"pm.environment.set('clientId', clientId);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f32dc4ee-b124-4a2a-8f7a-e3dfdde9cd24",
+								"exec": [
+									"var generateGUID = function () {",
+									"    function s4() {",
+									"        return Math.floor((1 + Math.random()) * 0x10000)",
+									"            .toString(16)",
+									"            .substring(1);",
+									"    }",
+									"    return s4() + s4() + '-' + s4() + '-' + s4() + '-' +",
+									"        s4() + '-' + s4() + s4() + s4();",
+									"};",
+									"",
+									"var encodeToBase64 = function (string) {",
+									"    return btoa(String.fromCharCode.apply(null, new Uint8Array(str2arrayBuffer(string))));",
+									"};",
+									"",
+									"var str2arrayBuffer = function (str) {",
+									"    var buf = new ArrayBuffer(str.length);",
+									"    var bufView = new Uint8Array(buf);",
+									"    for (var i = 0, strLen = str.length; i < strLen; i++) {",
+									"        bufView[i] = str.charCodeAt(i);",
+									"    }",
+									"    return buf;",
+									"};",
+									"",
+									"var signSymmtericPair = function (jsSHA, jwk, payload) {",
+									"    var keyPair = {};",
+									"    keyPair.privateKey = \"OTkxMjU0MTYxLTE5NDI1NzY2NzMLTE3N\";",
+									"    keyPair.publicKey = \"OTkxMjU0MTYxLTE5NDI1NzY2NzMLTE3N\";",
+									"",
+									"    var alg = 'HS256';",
+									"    var header = {'alg' : alg, 'jwk' : jwk, 'key' : keyPair.publicKey};",
+									"    var jwsHeaderAsString = JSON.stringify(header);",
+									"    var payloadAsString = JSON.stringify(payload);",
+									"",
+									"    var csrHeaderAndPayload = encodeToBase64(jwsHeaderAsString) + '.' + encodeToBase64(payloadAsString);",
+									"",
+									"    var shaObj = new jsSHA(\"SHA-256\", \"TEXT\");",
+									"    shaObj.setHMACKey(keyPair.publicKey, \"TEXT\");",
+									"    shaObj.update(csrHeaderAndPayload);",
+									"    var signedData = shaObj.getHMAC(\"B64\");",
+									"",
+									"    return csrHeaderAndPayload + '.' + signedData;",
+									"};",
+									"",
+									"// Load external lib jssha",
+									"pm.sendRequest(\"https://raw.githubusercontent.com/Caligatio/jsSHA/v2/src/sha.js\", function (err, response) {",
+									"    eval(response.text());",
+									"",
+									"    var jwk = {",
+									"        kid: undefined, ",
+									"        use: \"enc\", ",
+									"        kty: \"oct\",",
+									"        k: \"\"",
+									"    };",
+									"",
+									"    var payload = {",
+									"        device: {id: generateGUID(), platform: \"PostmanRuntime/7.25.0\", hardware: \"MacIntel\", deviceDisplayName: undefined},",
+									"        application: {clientPlatform: \"web\", id: \"ibm.mfp.suncor.web.test\"}",
+									"    };",
+									"    ",
+									"    var splitData = signSymmtericPair(this.jsSHA, jwk, payload).split('.');",
+									"    var signedRegistrationData = {",
+									"        signedRegistrationData: {",
+									"            'header' : splitData[0],",
+									"            'payload' : splitData[1],",
+									"            'signature' : splitData[2]",
+									"        }",
+									"    };",
+									"",
+									"    pm.variables.set('signedRegistrationData', JSON.stringify(signedRegistrationData));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-type",
+								"value": "application/json; charset=UTF-8",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{signedRegistrationData}}"
+						},
+						"url": {
+							"raw": "{{HOST}}/mfp/api/registration/v1/self",
+							"host": [
+								"{{HOST}}"
+							],
+							"path": [
+								"mfp",
+								"api",
+								"registration",
+								"v1",
+								"self"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "b0096404-2875-41ed-880a-a5803235a8ac",
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"var serverTimeStamp = jsonData.successes.clockSynchronization.serverTimeStamp;",
+									"pm.environment.set('serverRelativeTime', serverTimeStamp - new Date().getTime());"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-type",
+								"value": "application/json; charset=UTF-8",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"client_id\": \"{{clientId}}\",\n    \"scope\": \"UserLogin\",\n    \"challengeResponse\": {\n        \"UserLogin\": {\n            \"email\": \"{{username}}\",\n            \"password\": \"{{password}}\"\n        }\n    }\n}"
+						},
+						"url": {
+							"raw": "{{HOST}}/mfp/api/preauth/v1/preauthorize",
+							"host": [
+								"{{HOST}}"
+							],
+							"path": [
+								"mfp",
+								"api",
+								"preauth",
+								"v1",
+								"preauthorize"
+							]
+						},
+						"description": "Login to mfp with username and password"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Access Token",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "fa2fc314-844e-46a8-ac1e-1c415409ee7c",
+								"exec": [
+									"var encodeToBase64 = function (string) {",
+									"    return btoa(String.fromCharCode.apply(null, new Uint8Array(str2arrayBuffer(string))));",
+									"};",
+									"",
+									"var str2arrayBuffer = function (str) {",
+									"    var buf = new ArrayBuffer(str.length);",
+									"    var bufView = new Uint8Array(buf);",
+									"    for (var i = 0, strLen = str.length; i < strLen; i++) {",
+									"        bufView[i] = str.charCodeAt(i);",
+									"    }",
+									"    return buf;",
+									"};",
+									"",
+									"var signSymmtericPair = function (jsSHA, jwk, payload) {",
+									"    var keyPair = {};",
+									"    keyPair.privateKey = \"OTkxMjU0MTYxLTE5NDI1NzY2NzMLTE3N\";",
+									"    keyPair.publicKey = \"OTkxMjU0MTYxLTE5NDI1NzY2NzMLTE3N\";",
+									"",
+									"    var alg = 'HS256';",
+									"    var header = {'alg' : alg, 'jwk' : jwk, 'key' : keyPair.publicKey};",
+									"    var jwsHeaderAsString = JSON.stringify(header);",
+									"    var payloadAsString = JSON.stringify(payload);",
+									"",
+									"    var csrHeaderAndPayload = encodeToBase64(jwsHeaderAsString) + '.' + encodeToBase64(payloadAsString);",
+									"",
+									"    var shaObj = new jsSHA(\"SHA-256\", \"TEXT\");",
+									"    shaObj.setHMACKey(keyPair.publicKey, \"TEXT\");",
+									"    shaObj.update(csrHeaderAndPayload);",
+									"    var signedData = shaObj.getHMAC(\"B64\");",
+									"",
+									"    return csrHeaderAndPayload + '.' + signedData;",
+									"};",
+									"",
+									"var host = pm.environment.get('HOST');",
+									"var clientId = pm.environment.get('clientId');",
+									"pm.sendRequest(`${host}/mfp/api/az/v1/authorization?response_type=code&client_id=${clientId}&scope=LoggedIn RegisteredClient&redirect_uri=/mfp/api/az/v1/authorization/redirect/${clientId}`, function (err, response) {",
+									"",
+									"    var jsonData = response.json();",
+									"    var code = jsonData.code;",
+									"    pm.variables.set('authCode', code);",
+									"",
+									"    // Load external lib jssha",
+									"    pm.sendRequest(\"https://raw.githubusercontent.com/Caligatio/jsSHA/v2/src/sha.js\", function (err, response) {",
+									"        eval(response.text());",
+									"        ",
+									"        var DEFAULT_JWT_EXP_MILLIS = 60 * 1000;",
+									"        var serverRelativeTime = pm.environment.get('serverRelativeTime');",
+									"        var serverTimeStamp = new Date().getTime() + serverRelativeTime;",
+									"",
+									"        var jwk = {",
+									"            kid: clientId, ",
+									"            use: \"enc\", ",
+									"            kty: \"oct\",",
+									"            k: \"\"",
+									"        };",
+									"",
+									"        var payload = {",
+									"            aud: \"az/v1/token\",",
+									"            exp: serverTimeStamp + DEFAULT_JWT_EXP_MILLIS,",
+									"            iat: serverTimeStamp,",
+									"            iss: \"ibm.mfp.suncor.web.test$web\",",
+									"            jti: code,",
+									"            sub: clientId",
+									"        };",
+									"",
+									"        pm.variables.set('signedData', signSymmtericPair(this.jsSHA, jwk, payload));",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "ee6659ca-d27a-42d4-ade8-275b604cf7a6",
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"var access_token = jsonData.access_token;",
+									"pm.environment.set('manual_token', access_token);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded; charset=UTF-8",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "code",
+									"value": "{{authCode}}",
+									"type": "text"
+								},
+								{
+									"key": "grant_type",
+									"value": "authorization_code",
+									"type": "text"
+								},
+								{
+									"key": "client_assertion_type",
+									"value": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+									"type": "text"
+								},
+								{
+									"key": "redirect_uri",
+									"value": "/mfp/api/az/v1/authorization/redirect/{{clientId}}",
+									"type": "text"
+								},
+								{
+									"key": "client_assertion",
+									"value": "{{signedData}}",
+									"type": "text"
+								}
+							],
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{HOST}}/mfp/api/az/v1/token",
+							"host": [
+								"{{HOST}}"
+							],
+							"path": [
+								"mfp",
+								"api",
+								"az",
+								"v1",
+								"token"
+							]
+						},
+						"description": "Generate a user token for the logged in user"
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"protocolProfileBehavior": {}
+}
